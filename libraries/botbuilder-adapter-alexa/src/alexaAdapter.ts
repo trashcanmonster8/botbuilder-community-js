@@ -1,7 +1,7 @@
 import { Activity, ActivityTypes, BotAdapter, TurnContext, ConversationReference, ResourceResponse, WebRequest, WebResponse, InputHints } from 'botbuilder';
 import { RequestEnvelope, Response, ResponseEnvelope } from 'ask-sdk-model';
 import { escapeXmlCharacters, getLocale, getUserId, getIntentName } from 'ask-sdk-core';
-import { SkillRequestSignatureVerifier } from 'ask-sdk-express-adapter';
+import { SkillRequestSignatureVerifier, TimestampVerifier } from 'ask-sdk-express-adapter';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -15,9 +15,10 @@ export interface AlexaAdapterSettings {
     convertBotBuilderCardsToAlexaCards?: boolean;
 }
 
-
 export enum AlexaActivityTypes {
 }
+
+export { escapeXmlCharacters as EscapeXmlCharacters };
 
 /**
  * Bot Framework Adapter for [Twilio Whatsapp](https://www.twilio.com/whatsapp)
@@ -66,6 +67,7 @@ export class AlexaAdapter extends BotAdapter {
                         throw new Error(`AlexaAdapter.sendActivities(): Activity doesn't contain a conversation id.`);
                     }
 
+                    // TODO Use first or last activity only
                     // eslint-disable-next-line no-case-declarations
                     const message = this.activityToMessage(activity, context);
                     responses.push({ id: activity.id });
@@ -107,13 +109,13 @@ export class AlexaAdapter extends BotAdapter {
             }
         }
 
-        // Handle reprompt
+        // TODO: Handle reprompt
 
-        // Handle cards
+        // TODO: Handle cards
 
-        // Handle attachments
+        // TODO: Handle attachments
 
-        // Add sessionAttributes
+        // TODO: Add sessionAttributes
 
         // Tranform inputHint to shouldEndSession
         switch (activity.inputHint) {
@@ -220,8 +222,7 @@ export class AlexaAdapter extends BotAdapter {
      */
     public async processActivity(req: WebRequest, res: WebResponse, logic: (context: TurnContext) => Promise<any>): Promise<void> {
 
-        // Validate if requests are coming from Alexa
-        // https://developer.amazon.com/docs/custom-skills/handle-requests-sent-by-alexa.html#request-verify
+        // Validate if request is coming from Alexa
         if (!req.headers && (!req.headers['signature'] || !req.headers['Signature'])) {
             console.warn(`AlexaAdapter.processActivity(): request doesn't contain an Alexa Signature.`);
             res.status(401);
@@ -231,14 +232,19 @@ export class AlexaAdapter extends BotAdapter {
         const alexaRequestBody: RequestEnvelope = await retrieveBody(req);
         const activity = this.requestToActivity(alexaRequestBody);
 
-        // Verify if request is a valid signed request
+        // Verify if request is a valid request from Alexa
+        // https://developer.amazon.com/docs/custom-skills/host-a-custom-skill-as-a-web-service.html#verify-request-sent-by-alexa
         try {
+            // Check the request signature
             await this.verifier.verify(JSON.stringify(alexaRequestBody), req.headers);
+            // Check the request timestamp
+            await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
         }
         catch (error) {
             console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
-            res.status(401);
+            res.status(400);
             res.end();
+            return;
         }
 
         // Create a Conversation Reference
