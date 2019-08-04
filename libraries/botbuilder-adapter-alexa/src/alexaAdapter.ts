@@ -1,15 +1,18 @@
-import { Activity, ActivityTypes, BotAdapter, TurnContext, ConversationReference, ResourceResponse, WebRequest, WebResponse } from 'botbuilder';
-import * as alexa from 'ask-sdk-core';
+import { Activity, ActivityTypes, BotAdapter, TurnContext, ConversationReference, ResourceResponse, WebRequest, WebResponse, InputHints } from 'botbuilder';
+import { RequestEnvelope, Response, ResponseEnvelope } from 'ask-sdk-model';
+import { escapeXmlCharacters, getLocale, getUserId, getIntentName } from 'ask-sdk-core';
+import { SkillRequestSignatureVerifier } from 'ask-sdk-express-adapter';
 
 /**
  * @module botbuildercommunity/adapter-alexa
  */
 
-
 /**
  * Settings used to configure a `AlexaAdapter` instance.
  */
 export interface AlexaAdapterSettings {
+    shouldEndSessionByDefault?: boolean;
+    convertBotBuilderCardsToAlexaCards?: boolean;
 }
 
 
@@ -22,23 +25,23 @@ export enum AlexaActivityTypes {
 export class AlexaAdapter extends BotAdapter {
 
     protected readonly settings: AlexaAdapterSettings;
-    protected readonly client: any;
+    protected readonly verifier: SkillRequestSignatureVerifier;
     protected readonly channel: string = 'alexa';
 
     /**
      * Creates a new AlexaAdapter instance.
      * @param settings configuration settings for the adapter.
      */
-    public constructor(settings: AlexaAdapterSettings) {
+    public constructor(settings?: AlexaAdapterSettings) {
         super();
 
-        this.settings = settings;
-
-        try {
-
-        } catch (error) {
-            throw new Error(`AlexaAdapter.constructor(): ${error.message}.`);
+        const defaultSettings: AlexaAdapterSettings = {
+            shouldEndSessionByDefault: true,
+            convertBotBuilderCardsToAlexaCards: false
         }
+
+        this.settings = { ...defaultSettings, ...settings };
+        this.verifier = new SkillRequestSignatureVerifier();
     }
 
     /**
@@ -64,14 +67,8 @@ export class AlexaAdapter extends BotAdapter {
                     }
 
                     // eslint-disable-next-line no-case-declarations
-                    const message = this.parseActivity(activity);
-
-                    // try {
-                    //     const res: MessageInstance = await this.client.messages.create(message);
-                    //     responses.push({ id: res.sid });
-                    // } catch (error) {
-                    //     throw new Error(`AlexaAdapter.sendActivities(): ${error.message}.`);
-                    // }
+                    const message = this.activityToMessage(activity, context);
+                    responses.push({ id: activity.id });
 
                     break;
                 default:
@@ -84,15 +81,119 @@ export class AlexaAdapter extends BotAdapter {
     }
 
     /**
-     * Transform Bot Framework Activity to a Twilio Message.
+     * Transform Bot Framework Activity to a Alexa Response Message.
      * 
      * @param activity Activity to transform
      */
-    protected parseActivity(activity: Partial<Activity>): any {
+    protected activityToMessage(activity: Partial<Activity>, context: TurnContext): any {
 
-        const message = activity;
+        // Create response
+        const response: Response = {};
 
-        return message;
+        // Add SSML or text response
+        if (activity.speak) {
+            if (!activity.speak.startsWith('<speak>') && !activity.speak.endsWith('</speak>')) {
+                activity.speak = `<speak>${activity.speak}</speak>`
+            }
+
+            response.outputSpeech = {
+                type: 'SSML',
+                ssml: activity.speak
+            }
+        } else {
+            response.outputSpeech = {
+                type: 'PlainText',
+                text: activity.text
+            }
+        }
+
+        // Handle reprompt
+
+        // Handle cards
+
+        // Handle attachments
+
+        // Add sessionAttributes
+
+        // Tranform inputHint to shouldEndSession
+        switch (activity.inputHint) {
+            case InputHints.IgnoringInput:
+                response.shouldEndSession = true;
+                break;
+            case InputHints.ExpectingInput:
+                response.shouldEndSession = false;
+                break;
+            case InputHints.AcceptingInput:
+            default:
+                break;
+        }
+
+        // Create response
+        const responseEnvelope: ResponseEnvelope = {
+            version: '1.0',
+            response
+        };
+
+        context.turnState.set('httpBody', responseEnvelope);
+
+        return;
+    }
+
+    protected requestToActivity(alexaRequestBody: RequestEnvelope): Partial<Activity> {
+
+        const message = alexaRequestBody.request;
+        const system = alexaRequestBody.context.System;
+
+        // Handle events
+        const activity: Partial<Activity> = {
+            id: message.requestId,
+            timestamp: new Date(message.timestamp),
+            channelId: this.channel,
+            conversation: {
+                id: alexaRequestBody.session.sessionId,
+                isGroup: false,
+                conversationType: message.type,
+                tenantId: null,
+                name: ''
+            },
+            from: {
+                id: getUserId(alexaRequestBody),
+                name: ''
+            },
+            recipient: {
+                id: system.application.applicationId,
+                name: ''
+            },
+            locale: getLocale(alexaRequestBody),
+            text: message.type === 'IntentRequest' ? getIntentName(alexaRequestBody) : '',
+            channelData: alexaRequestBody,
+            localTimezone: null,
+            callerId: null,
+            serviceUrl: `${system.apiEndpoint}?token=${system.apiAccessToken}`,
+            listenFor: null,
+            label: null,
+            valueType: null,
+            type: message.type
+        };
+
+        // Set Activity Type
+        switch (message.type) {
+
+            case 'LaunchRequest':
+                activity.type = ActivityTypes.ConversationUpdate;
+                break;
+
+            case 'SessionEndedRequest':
+                activity.type = ActivityTypes.EndOfConversation;
+                break;
+
+            case 'IntentRequest':
+                activity.type = ActivityTypes.Message;
+                break;
+
+        }
+
+        return activity;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -105,22 +206,9 @@ export class AlexaAdapter extends BotAdapter {
         throw new Error('Method not supported by Alexa API.');
     }
 
-    /**
-     * Resume a conversation with a user, possibly after some time has gone by.
-     *
-     * @param reference A `ConversationReference` saved during a previous incoming activity.
-     * @param logic A function handler that will be called to perform the bots logic after the the adapters middleware has been run.
-     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public async continueConversation(reference: Partial<ConversationReference>, logic: (context: TurnContext) => Promise<void>): Promise<void> {
-        const request: Partial<Activity> = TurnContext.applyConversationReference(
-            { type: 'event', name: 'continueConversation' },
-            reference,
-            true
-        );
-
-        const context: TurnContext = this.createContext(request);
-
-        return this.runMiddleware(context, logic);
+        throw new Error('Method not supported by Alexa API.');
     }
 
     /**
@@ -132,68 +220,41 @@ export class AlexaAdapter extends BotAdapter {
      */
     public async processActivity(req: WebRequest, res: WebResponse, logic: (context: TurnContext) => Promise<any>): Promise<void> {
 
-        // Validate if requests are coming from Twilio
-        // https://www.twilio.com/docs/usage/security#validating-requests
-        if (!req.headers && (!req.headers['x-twilio-signature'] || !req.headers['X-Twilio-Signature'])) {
-            console.warn(`AlexaAdapter.processActivity(): request doesn't contain a Twilio Signature.`);
+        // Validate if requests are coming from Alexa
+        // https://developer.amazon.com/docs/custom-skills/handle-requests-sent-by-alexa.html#request-verify
+        if (!req.headers && (!req.headers['signature'] || !req.headers['Signature'])) {
+            console.warn(`AlexaAdapter.processActivity(): request doesn't contain an Alexa Signature.`);
             res.status(401);
             res.end();
         }
 
-        const message = await retrieveBody(req);
+        const alexaRequestBody: RequestEnvelope = await retrieveBody(req);
+        const activity = this.requestToActivity(alexaRequestBody);
 
-        if (!message) {
-            res.status(400);
+        // Verify if request is a valid signed request
+        try {
+            await this.verifier.verify(JSON.stringify(alexaRequestBody), req.headers);
+        }
+        catch (error) {
+            console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
+            res.status(401);
             res.end();
         }
-
-        // const isTwilioRequest = Twilio.validateRequest(authToken, signature, requestUrl, message);
-
-        // if (!isTwilioRequest) {
-        //     console.warn(`AlexaAdapter.processActivity(): request doesn't contain a valid Twilio Signature.`);
-
-        //     res.status(401);
-        //     res.end();
-        // }
-
-        // Handle events
-        const activity: Partial<Activity> = {
-            id: message.MessageSid,
-            timestamp: new Date(),
-            channelId: this.channel,
-            conversation: {
-                id: message.From,
-                isGroup: false, // Supported by WhatsApp, not supported by Twilio API yet.
-                conversationType: null,
-                tenantId: null,
-                name: ''
-            },
-            from: {
-                id: message.From,
-                name: '' // Supported by WhatsApp, not supported by Twilio API yet.
-            },
-            recipient: {
-                id: message.To,
-                name: ''
-            },
-            text: message.Body,
-            channelData: message,
-            localTimezone: null,
-            callerId: null,
-            serviceUrl: null,
-            listenFor: null,
-            label: message.MessagingServiceSid,
-            valueType: null,
-            type: null
-        };
 
         // Create a Conversation Reference
         const context: TurnContext = this.createContext(activity);
 
+        // Handle session attributes
+        if (alexaRequestBody.session.attributes) {
+            context.turnState.set('alexaSessionAttributes', alexaRequestBody.session.attributes);
+        } else {
+            context.turnState.set('alexaSessionAttributes', {});
+        }
+
         context.turnState.set('httpStatus', 200);
         await this.runMiddleware(context, logic);
 
-        // Send http response back
+        // Send HTTP response back
         res.status(context.turnState.get('httpStatus'));
         if (context.turnState.get('httpBody')) {
             res.send(context.turnState.get('httpBody'));

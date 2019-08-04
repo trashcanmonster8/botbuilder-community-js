@@ -3,3 +3,4 @@
  */
 
 export * from './alexaAdapter';
+export * from './middleware/alexaIntentRequestToMessageActivityMiddleware';
