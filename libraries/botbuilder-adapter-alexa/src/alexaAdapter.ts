@@ -39,7 +39,7 @@ export class AlexaAdapter extends BotAdapter {
         const defaultSettings: AlexaAdapterSettings = {
             shouldEndSessionByDefault: true,
             convertBotBuilderCardsToAlexaCards: false
-        }
+        };
 
         this.settings = { ...defaultSettings, ...settings };
         this.verifier = new SkillRequestSignatureVerifier();
@@ -75,7 +75,7 @@ export class AlexaAdapter extends BotAdapter {
                     break;
                 default:
                     responses.push({} as ResourceResponse);
-                    console.warn(`AlexaAdapter.sendActivities(): Activities of type '${activity.type}' aren't supported.`);
+                    console.warn(`AlexaAdapter.sendActivities(): Activities of type '${ activity.type }' aren't supported.`);
             }
         }
 
@@ -95,18 +95,18 @@ export class AlexaAdapter extends BotAdapter {
         // Add SSML or text response
         if (activity.speak) {
             if (!activity.speak.startsWith('<speak>') && !activity.speak.endsWith('</speak>')) {
-                activity.speak = `<speak>${activity.speak}</speak>`
+                activity.speak = `<speak>${ activity.speak }</speak>`;
             }
 
             response.outputSpeech = {
                 type: 'SSML',
                 ssml: activity.speak
-            }
+            };
         } else {
             response.outputSpeech = {
                 type: 'PlainText',
                 text: activity.text
-            }
+            };
         }
 
         // TODO: Handle reprompt
@@ -171,7 +171,7 @@ export class AlexaAdapter extends BotAdapter {
             channelData: alexaRequestBody,
             localTimezone: null,
             callerId: null,
-            serviceUrl: `${system.apiEndpoint}?token=${system.apiAccessToken}`,
+            serviceUrl: `${ system.apiEndpoint }?token=${ system.apiAccessToken }`,
             listenFor: null,
             label: null,
             valueType: null,
@@ -241,7 +241,7 @@ export class AlexaAdapter extends BotAdapter {
             await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
         }
         catch (error) {
-            console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
+            console.warn(`AlexaAdapter.processActivity(): ${ error.message }`);
             res.status(400);
             res.end();
             return;

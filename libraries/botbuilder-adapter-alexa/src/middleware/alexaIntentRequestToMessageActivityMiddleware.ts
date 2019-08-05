@@ -3,7 +3,7 @@ import { RequestEnvelope, IntentRequest } from 'ask-sdk-model';
 
 export class AlexaIntentRequestToMessageActivityMiddleware implements Middleware {
 
-    constructor() {
+    public constructor() {
     }
 
     public async onTurn(context: TurnContext, next: () => Promise<void>): Promise<void> {
