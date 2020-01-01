@@ -1,4 +1,4 @@
-import { RequestEnvelope, SessionEndedRequest, Context, IntentRequest } from 'ask-sdk-model';
+import { RequestEnvelope, SessionEndedRequest, Context, IntentRequest, Session } from 'ask-sdk-model';
 
 const context: Context = {
     System: {
@@ -10,6 +10,12 @@ const context: Context = {
         },
         apiEndpoint: 'alexa.amazon.com'
     }
+};
+const session: Session = {
+    new: false,
+    sessionId: 'sessionId',
+    user: context.System.user,
+    application: context.System.application
 }
 const intentRequest: IntentRequest = {
     type: 'IntentRequest',
@@ -19,7 +25,8 @@ const intentRequest: IntentRequest = {
     intent: {
         name: 'myIntent',
         confirmationStatus: 'NONE'
-    }
+    },
+    locale: 'en-US'
 };
 const sessionEndRequest: SessionEndedRequest = {
     'type': 'SessionEndedRequest',
@@ -34,6 +41,7 @@ export const basicIntentRequest: RequestEnvelope = {
 };
 export const basicEndSession: RequestEnvelope = {
     version: '1.0',
+    session: session,
     context: context,
     request: sessionEndRequest
 };

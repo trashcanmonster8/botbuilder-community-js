@@ -1,15 +1,60 @@
-import { RequestEnvelope } from 'ask-sdk-model';
+import { RequestEnvelope, Session } from 'ask-sdk-model';
 import { Activity, ActivityTypes } from 'botbuilder';
+import { getRequestType, getIntentName, getLocale, getUserId } from 'ask-sdk-core';
 
 /**
  * @module botbuildercommunity/adapter-alexa
  */
 
+export enum AlexaApi {
+    version = '1.0'
+}
+
+export enum AlexaChannel {
+    channelId = 'alexa',
+    recipientName = 'skill',
+    userName = 'user',
+    invalidActivity = 'invalidActivity'
+}
+
 export class AlexaActivity {
     private readonly request: RequestEnvelope;
+    private readonly activity: Partial<Activity>;
+    private readonly requestType: string;
 
     public constructor(request: RequestEnvelope) {
         this.request = request;
+        this.requestType = getRequestType(request);
+
+        if (request.session === undefined) {
+            request.session = {
+                new: true,
+                sessionId: '',
+                user: request.context.System.user,
+                application: request.context.System.application
+            }
+        }
+
+        this.activity = {
+            type: AlexaChannel.invalidActivity,
+            serviceUrl: request.context.System.apiEndpoint,
+            channelId: AlexaChannel.channelId,
+            from: {
+                id: getUserId(request),
+                name: AlexaChannel.userName
+            },
+            conversation: {
+                isGroup: false,
+                conversationType: '',
+                tenantId: '',
+                id: request.session.sessionId,
+                name: '',
+            },
+            recipient: {
+                id: request.context.System.application.applicationId,
+                name: AlexaChannel.recipientName
+            }
+        };
     }
 
     public get envelope(): RequestEnvelope {
@@ -17,8 +62,19 @@ export class AlexaActivity {
     }
 
     public getActivity(): Partial<Activity> {
-        return {
-            type: ActivityTypes.Message
+        switch (this.requestType) {
+            case 'IntentRequest': {
+                this.activity.type = ActivityTypes.Message;
+                this.activity.text = getIntentName(this.request);
+                this.activity.locale = getLocale(this.request);
+                break;
+            }
+            case 'SessionEndedRequest': {
+                this.activity.type = ActivityTypes.EndOfConversation;
+            }
+            default:
         }
+
+        return this.activity;
     }
 }
