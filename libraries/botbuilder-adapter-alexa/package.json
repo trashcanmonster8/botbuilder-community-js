@@ -26,11 +26,15 @@
     ],
     "report-dir": "./.nyc_output/coverage"
   },
+  "mocha": {
+    "require": "ts-node/register",
+    "spec": "./test/**/*.test.ts"
+  },
   "scripts": {
     "clean": "rimraf ./lib",
     "build": "tsc",
-    "test": "mocha --require ts-node/register ./test/**/*.test.ts",
-    "test-ci": "nyc mocha --require ts-node/register --reporter xunit --reporter-options output=./mocha-test-results.xml --reporter-options suiteName=$npm_package_name ./test/**/*.test.ts"
+    "test": "mocha",
+    "test-ci": "nyc mocha --reporter xunit --reporter-options output=./mocha-test-results.xml --reporter-options suiteName=$npm_package_name"
   },
   "repository": {
     "type": "git",
@@ -54,6 +58,7 @@
   "devDependencies": {
     "@types/mocha": "^5.2.7",
     "@types/node": "^13.1.0",
+    "@types/qs": "^6.5.3",
     "mocha": "^6.2.2",
     "nyc": "^15.0.0",
     "rimraf": "^3.0.0",
@@ -61,9 +66,9 @@
     "typescript": "^3.7.4"
   },
   "dependencies": {
-    "@botbuildercommunity/adapter-twitter": "^1.0.1",
     "ask-sdk-core": "^2.7.0",
     "ask-sdk-model": "^1.25.1",
-    "botbuilder": "^4.7.0"
+    "botbuilder": "^4.7.0",
+    "qs": "^6.9.1"
   }
 }

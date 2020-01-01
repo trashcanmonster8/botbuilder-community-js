@@ -10,7 +10,7 @@ import {
 } from 'botbuilder';
 import { RequestEnvelope, IntentRequest, Session, interfaces, SessionEndedRequest } from 'ask-sdk-model';
 import { getRequestType, getLocale, getUserId, createAskSdkError } from 'ask-sdk-core';
-import { retrieveBody } from '@botbuildercommunity/adapter-twitter';
+import { retrieveBody } from './util';
 
 /**
  * @module botbuildercommunity/adapter-alexa
