@@ -8,8 +8,8 @@ import {
     WebResponse,
     ActivityTypes
 } from 'botbuilder';
-import { RequestEnvelope, IntentRequest, Session, interfaces, SessionEndedRequest } from 'ask-sdk-model';
-import { getRequestType, getLocale, getUserId, createAskSdkError } from 'ask-sdk-core';
+import { RequestEnvelope } from 'ask-sdk-model';
+import { createAskSdkError } from 'ask-sdk-core';
 import { retrieveBody } from './util';
 import { AlexaActivity } from './alexaActivity';
 
@@ -47,7 +47,7 @@ export class AdapterAlexa extends BotAdapter {
 
     public async processActivity(req: WebRequest, res: WebResponse, logic: (context: TurnContext) => Promise<any>): Promise<void> {
         const alexaRequest: RequestEnvelope = await retrieveBody(req);
-        const activity: Partial<Activity> = AlexaActivity.createActivity(alexaRequest)
+        const activity: Partial<Activity> = AlexaActivity.createActivity(alexaRequest);
         const context: TurnContext = this.createContext(activity);
         await this.runMiddleware(context, logic);
 

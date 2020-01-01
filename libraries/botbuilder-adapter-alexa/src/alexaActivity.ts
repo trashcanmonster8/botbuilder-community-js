@@ -36,7 +36,7 @@ export class AlexaActivity {
                 sessionId: '',
                 user: request.context.System.user,
                 application: request.context.System.application
-            }
+            };
         }
 
         this.activity = {
@@ -75,6 +75,7 @@ export class AlexaActivity {
             }
             case 'SessionEndedRequest': {
                 this.activity.type = ActivityTypes.EndOfConversation;
+                break;
             }
             default:
         }
