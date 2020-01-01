@@ -60,22 +60,6 @@ describe('Tests for Alexa Adapter', (): void => {
             };
         });
         
-        it('should convert intent request to message activity', async (): Promise<void> => {
-            alexaRequest.body = basicIntentRequest;
-            await alexaAdapter.processActivity(alexaRequest, alexaResponse, async (context: TurnContext): Promise<void> => {
-                equal(context.activity.channelId, 'alexa');
-                equal(context.activity.text, (basicIntentRequest.request as IntentRequest).intent.name);
-                equal(context.activity.type, ActivityTypes.Message);
-            });
-        });
-
-        it('should convert session ended request to end conversation activity', async (): Promise<void> => {
-            alexaRequest.body = basicEndSession;
-            await alexaAdapter.processActivity(alexaRequest, alexaResponse, async (context: TurnContext): Promise<void> => {
-                equal(context.activity.type, ActivityTypes.EndOfConversation);
-            });
-        });
-        
         it('should return 404 if no response activities are created for conversation', async (): Promise<void> => {
             alexaRequest.body = basicIntentRequest;
             alexaResponse.status = (status: number): void => {
