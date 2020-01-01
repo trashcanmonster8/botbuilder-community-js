@@ -1,4 +1,5 @@
 import { RequestEnvelope } from 'ask-sdk-model';
+import { Activity, ActivityTypes } from 'botbuilder';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -13,5 +14,11 @@ export class AlexaActivity {
 
     public get envelope(): RequestEnvelope {
         return this.request;
+    }
+
+    public getActivity(): Partial<Activity> {
+        return {
+            type: ActivityTypes.Message
+        }
     }
 }
