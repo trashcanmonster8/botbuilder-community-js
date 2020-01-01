@@ -1,4 +1,4 @@
-import { RequestEnvelope, Session } from 'ask-sdk-model';
+import { RequestEnvelope } from 'ask-sdk-model';
 import { Activity, ActivityTypes } from 'botbuilder';
 import { getRequestType, getIntentName, getLocale, getUserId } from 'ask-sdk-core';
 
@@ -21,6 +21,10 @@ export class AlexaActivity {
     private readonly request: RequestEnvelope;
     private readonly activity: Partial<Activity>;
     private readonly requestType: string;
+
+    public static createActivity(request: RequestEnvelope): Partial<Activity> {
+        return (new AlexaActivity(request)).getActivity();
+    }
 
     public constructor(request: RequestEnvelope) {
         this.request = request;

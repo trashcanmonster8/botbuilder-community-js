@@ -11,6 +11,7 @@ import {
 import { RequestEnvelope, IntentRequest, Session, interfaces, SessionEndedRequest } from 'ask-sdk-model';
 import { getRequestType, getLocale, getUserId, createAskSdkError } from 'ask-sdk-core';
 import { retrieveBody } from './util';
+import { AlexaActivity } from './alexaActivity';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -46,48 +47,7 @@ export class AdapterAlexa extends BotAdapter {
 
     public async processActivity(req: WebRequest, res: WebResponse, logic: (context: TurnContext) => Promise<any>): Promise<void> {
         const alexaRequest: RequestEnvelope = await retrieveBody(req);
-        const system: interfaces.system.SystemState = alexaRequest.context.System;
-        const requestType = getRequestType(alexaRequest);
-        const session: Session = alexaRequest.session ? alexaRequest.session : {
-            new: true,
-            sessionId: '',
-            user: alexaRequest.context.System.user,
-            application: alexaRequest.context.System.application
-        };
-        const activity: Partial<Activity> = {
-            channelId: 'alexa',
-            serviceUrl: `${ system.apiEndpoint }?token=${ system.apiAccessToken }`,
-            recipient: {
-                id: system.application.applicationId,
-                name: 'skill'
-            },
-            from: {
-                id: getUserId(alexaRequest),
-                name: 'user'
-            },
-            conversation: {
-                isGroup: false,
-                conversationType: 'conversation',
-                id: session.sessionId,
-                tenantId: 'test',
-                name: 'test'
-            },
-            type: requestType,
-            id: alexaRequest.request.requestId,
-            timestamp: new Date(alexaRequest.request.timestamp),
-            locale: getLocale(alexaRequest)
-        };
-
-        if (requestType === 'IntentRequest') {
-            const intentRequest: IntentRequest = alexaRequest.request as IntentRequest;
-            activity.text = intentRequest.intent.name;
-            activity.type = ActivityTypes.Message;
-        } else if (requestType === 'SessionEndedRequest') {
-            const sessionEndedRequest: SessionEndedRequest = alexaRequest.request as SessionEndedRequest;
-            activity.type = ActivityTypes.EndOfConversation;
-            activity.value = sessionEndedRequest.reason;
-        }
-
+        const activity: Partial<Activity> = AlexaActivity.createActivity(alexaRequest)
         const context: TurnContext = this.createContext(activity);
         await this.runMiddleware(context, logic);
 
