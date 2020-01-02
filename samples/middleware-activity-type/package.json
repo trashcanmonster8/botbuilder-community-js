@@ -1,0 +1,23 @@
+{
+  "name": "botbuilder-activity-type-testbot",
+  "version": "0.1.0",
+  "description": "Test bot application for verifying activity type functionality.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "text",
+    "activity type",
+    "bot",
+    "framework",
+    "chatbots"
+  ],
+  "author": "Michael Szul <michael@szul.us>",
+  "license": "MIT",
+  "dependencies": {
+    "@botbuildercommunity/middleware-activity-type": "^1.0.0",
+    "botbuilder": "^4.5.3",
+    "restify": "^8.4.0"
+  }
+}
