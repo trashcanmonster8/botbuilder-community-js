@@ -67,7 +67,7 @@ export class AlexaAdapter extends BotAdapter {
 
                     // TODO Use first or last activity only
                     // eslint-disable-next-line no-case-declarations
-                    const message = this.activityToMessage(activity, context);
+                    this.activityToMessage(activity, context);
                     responses.push({ id: activity.id });
 
                     break;
@@ -236,7 +236,7 @@ export class AlexaAdapter extends BotAdapter {
             await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
         }
         catch (error) {
-            console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
+            console.warn(`AlexaAdapter.processActivity(): ${ error.message }`);
             res.status(400);
             res.end(createAskSdkError('AlexaAdapter', error.message));
             return;
