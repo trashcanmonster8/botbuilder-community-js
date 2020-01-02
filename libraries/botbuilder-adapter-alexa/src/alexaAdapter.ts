@@ -11,13 +11,22 @@ import { SkillRequestSignatureVerifier, TimestampVerifier } from 'ask-sdk-expres
  * Settings used to configure a `AlexaAdapter` instance.
  */
 export interface AlexaAdapterSettings {
+    /**
+     * Defaults to true
+     */
     shouldEndSessionByDefault?: boolean;
+    /**
+     * Defaults to false
+     */
     tryConvertFirstActivityAttachmentToAlexaCard?: boolean; 
 }
 
 export enum AlexaActivityTypes {
 }
 
+/**
+ * Export XmlCharacters utility
+ */
 export { escapeXmlCharacters as EscapeXmlCharacters };
 
 /**

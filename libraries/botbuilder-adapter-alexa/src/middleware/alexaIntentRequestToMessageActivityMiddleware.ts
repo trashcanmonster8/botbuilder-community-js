@@ -1,9 +1,21 @@
 import { Middleware, TurnContext } from 'botbuilder';
-import { RequestEnvelope, IntentRequest } from 'ask-sdk-model';
+import { RequestEnvelope } from 'ask-sdk-model';
+import { getSlotValue } from 'ask-sdk-core';
+
+export interface AlexaIntentRequestToMessageActivityMiddlewareSettings {
+    intentSlotName: string;
+}
 
 export class AlexaIntentRequestToMessageActivityMiddleware implements Middleware {
 
-    public constructor() {
+    protected readonly settings: AlexaIntentRequestToMessageActivityMiddlewareSettings;
+
+    public constructor(settings: AlexaIntentRequestToMessageActivityMiddlewareSettings) {
+        const defaultSettings: AlexaIntentRequestToMessageActivityMiddlewareSettings = {
+            intentSlotName: 'phrase'
+        };
+
+        this.settings = { ...defaultSettings, ...settings };
     }
 
     public async onTurn(context: TurnContext, next: () => Promise<void>): Promise<void> {
@@ -18,11 +30,8 @@ export class AlexaIntentRequestToMessageActivityMiddleware implements Middleware
             return await next();
         }
 
-        const alexaIntentRequest: IntentRequest = alexaRequest.request;
-
-        if (alexaIntentRequest.intent.slots && alexaIntentRequest.intent.slots['phrase']) {
-            context.activity.text = alexaIntentRequest.intent.slots['phrase'].value;
-        }
+        const intentValue = getSlotValue(alexaRequest, this.settings.intentSlotName);
+        context.activity.text = intentValue;
 
         await next();
     }
