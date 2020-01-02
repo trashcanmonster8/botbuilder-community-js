@@ -1,5 +1,6 @@
 import { WebRequest } from 'botbuilder';
 import { parse } from 'qs';
+import { createAskSdkError } from 'ask-sdk-core';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -40,4 +41,8 @@ export function retrieveBody(req: WebRequest): Promise<any> {
             });
         }
     });
+}
+
+export function alexaAdapterError(message: string): Error {
+    return createAskSdkError('alexaAdapter', message);
 }

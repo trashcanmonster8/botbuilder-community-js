@@ -9,8 +9,7 @@ import {
     ActivityTypes
 } from 'botbuilder';
 import { RequestEnvelope } from 'ask-sdk-model';
-import { createAskSdkError } from 'ask-sdk-core';
-import { retrieveBody } from './util';
+import { retrieveBody, alexaAdapterError } from './util';
 import { AlexaActivity } from './alexaActivity';
 
 /**
@@ -80,7 +79,7 @@ export class AdapterAlexa extends BotAdapter {
             }
         } else {
             res.status(404);
-            res.send(createAskSdkError('AlexaAdapter', 'Could not get activity from'));
+            res.send(alexaAdapterError('Could not get activity for this conversation'));
         }
 
         res.end();

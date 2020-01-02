@@ -1,7 +1,7 @@
-import { createAskSdkError } from 'ask-sdk-core';
-import { Activity } from 'botbuilder';
-import { ResponseEnvelope } from 'ask-sdk-model';
+import { Activity, ActivityTypes } from 'botbuilder';
+import { ResponseEnvelope, Response } from 'ask-sdk-model';
 import { AlexaApi } from './alexaApi';
+import { alexaAdapterError } from './util';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -12,21 +12,39 @@ export class Responder {
 
     public constructor(activities: Activity[]) {
         if (activities.length < 1) {
-            throw createAskSdkError('alexaAdapter', 'no response activites created for this request');
+            throw alexaAdapterError('no response activites created for this request');
         }
 
         this.activites = activities;
     }
 
     public getResponse(): ResponseEnvelope {
-        return {
-            version: AlexaApi.version,
-            response: {
-                outputSpeech: {
-                    type: 'PlainText',
-                    text: this.activites[this.activites.length - 1].text
-                }
+        const activity: Activity = this.activites[this.activites.length - 1];
+        let response: Response = {
+            shouldEndSession: true
+        };
+
+        switch (activity.type) {
+            case (ActivityTypes.Message): {
+                response = {
+                    outputSpeech: {
+                        type: 'PlainText',
+                        text: activity.text
+                    }
+                };
+                break;
+            }
+            case (ActivityTypes.EndOfConversation): {
+                break;
+            }
+            default: {
+                throw alexaAdapterError('unknown activity')
             }
         }
+
+        return {
+            version: AlexaApi.version,
+            response: response
+        };
     }
 }
