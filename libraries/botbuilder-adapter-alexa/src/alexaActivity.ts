@@ -6,10 +6,6 @@ import { getRequestType, getIntentName, getLocale, getUserId } from 'ask-sdk-cor
  * @module botbuildercommunity/adapter-alexa
  */
 
-export enum AlexaApi {
-    version = '1.0'
-}
-
 export enum AlexaChannel {
     channelId = 'alexa',
     recipientName = 'skill',

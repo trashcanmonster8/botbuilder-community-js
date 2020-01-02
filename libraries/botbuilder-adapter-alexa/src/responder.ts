@@ -1,5 +1,11 @@
 import { createAskSdkError } from 'ask-sdk-core';
 import { Activity } from 'botbuilder';
+import { ResponseEnvelope } from 'ask-sdk-model';
+import { AlexaApi } from './alexaApi';
+
+/**
+ * @module botbuildercommunity/adapter-alexa
+ */
 
 export class Responder {
     private readonly activites: Activity[];
@@ -10,5 +16,17 @@ export class Responder {
         }
 
         this.activites = activities;
+    }
+
+    public getResponse(): ResponseEnvelope {
+        return {
+            version: AlexaApi.version,
+            response: {
+                outputSpeech: {
+                    type: 'PlainText',
+                    text: this.activites[this.activites.length - 1].text
+                }
+            }
+        }
     }
 }
