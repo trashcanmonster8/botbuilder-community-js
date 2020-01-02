@@ -4,8 +4,6 @@ const Twilio = require('twilio').Twilio;
 
 describe('TwilioWhatsAppAdapter', function () {
 
-    let adapter;
-
     const fakeAccountSid = 'AC8db973kwl8xp1lz94kjf0bma5pez8c'; // 34 characters
     const fakeAuthToken = '96yc5z9g44vl4ks2p1suc42yb9p4lpmu'; // 32 characters
     const fakeEndpointUrl = 'https://example.com/api/whatsapp/messages';
