@@ -7,9 +7,29 @@
   "directories": {
     "lib": "lib"
   },
+  "nyc": {
+    "extends": "@istanbuljs/nyc-config-typescript",
+    "all": true,
+    "check-coverage": true,
+    "lines": 0,
+    "statements": 0,
+    "functions": 0,
+    "branches": 0,
+    "exclude": [
+      "**/*.d.ts",
+      "**/*.test.js"
+    ],
+    "reporter": [
+      "text",
+      "cobertura",
+      "html"
+    ],
+    "report-dir": "./.nyc_output/coverage"
+  },
   "scripts": {
     "build": "tsc",
-    "test": "tsc && mocha tests/ --exit"
+    "test": "tsc && nyc mocha",
+    "test-ci": "tsc && nyc mocha --reporter xunit --reporter-options output=./mocha-test-results.xml --reporter-options suiteName=$npm_package_name"
   },
   "repository": {
     "type": "git",
@@ -19,12 +39,13 @@
     "chatbots",
     "bot framework",
     "bot builder",
-    "whatsapp adapter",
+    "alexa adapter",
     "adapters",
-    "whatsapp"
+    "alexa"
   ],
   "contributors": [
     "Bot Builder Community",
+    "Jacob Mayer",
     "Mick Vleeshouwer <mick@imick.nl>"
   ],
   "license": "MIT",
@@ -35,13 +56,16 @@
   "dependencies": {
     "ask-sdk-core": "^2.7.0",
     "ask-sdk-express-adapter": "^2.0.0",
-    "ask-sdk-model": "^1.18.0",
-    "botbuilder": "^4.5.3"
+    "ask-sdk-model": "^1.25.1",
+    "botbuilder": "^4.7.0"
   },
   "devDependencies": {
+    "@types/mocha": "^5.2.7",
     "express": "^4.17.1",
-    "tslint": "^5.18.0",
-    "tslint-microsoft-contrib": "^5.2.1",
-    "typescript": "^3.5.3"
+    "mocha": "^6.2.2",
+    "nyc": "^15.0.0",
+    "tslint": "^5.20.1",
+    "tslint-microsoft-contrib": "^6.2.0",
+    "typescript": "^3.7.4"
   }
 }

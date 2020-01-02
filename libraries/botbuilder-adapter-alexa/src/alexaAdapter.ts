@@ -1,6 +1,6 @@
 import { Activity, ActivityTypes, BotAdapter, TurnContext, ConversationReference, ResourceResponse, WebRequest, WebResponse, InputHints } from 'botbuilder';
-import { RequestEnvelope, Response, ResponseEnvelope } from 'ask-sdk-model';
-import { escapeXmlCharacters, getLocale, getUserId, getIntentName } from 'ask-sdk-core';
+import { RequestEnvelope, Response, ResponseEnvelope, interfaces as AlexaInterfaces } from 'ask-sdk-model';
+import { escapeXmlCharacters, getLocale, getUserId, getIntentName, getRequestType, createAskSdkError } from 'ask-sdk-core';
 import { SkillRequestSignatureVerifier, TimestampVerifier } from 'ask-sdk-express-adapter';
 
 /**
@@ -12,7 +12,7 @@ import { SkillRequestSignatureVerifier, TimestampVerifier } from 'ask-sdk-expres
  */
 export interface AlexaAdapterSettings {
     shouldEndSessionByDefault?: boolean;
-    convertBotBuilderCardsToAlexaCards?: boolean;
+    tryConvertFirstActivityAttachmentToAlexaCard?: boolean; 
 }
 
 export enum AlexaActivityTypes {
@@ -21,12 +21,11 @@ export enum AlexaActivityTypes {
 export { escapeXmlCharacters as EscapeXmlCharacters };
 
 /**
- * Bot Framework Adapter for [Twilio Whatsapp](https://www.twilio.com/whatsapp)
+ * Bot Framework Adapter for Alexa
  */
 export class AlexaAdapter extends BotAdapter {
 
     protected readonly settings: AlexaAdapterSettings;
-    protected readonly verifier: SkillRequestSignatureVerifier;
     protected readonly channel: string = 'alexa';
 
     /**
@@ -38,11 +37,10 @@ export class AlexaAdapter extends BotAdapter {
 
         const defaultSettings: AlexaAdapterSettings = {
             shouldEndSessionByDefault: true,
-            convertBotBuilderCardsToAlexaCards: false
+            tryConvertFirstActivityAttachmentToAlexaCard: false,
         };
 
         this.settings = { ...defaultSettings, ...settings };
-        this.verifier = new SkillRequestSignatureVerifier();
     }
 
     /**
@@ -144,7 +142,7 @@ export class AlexaAdapter extends BotAdapter {
     protected requestToActivity(alexaRequestBody: RequestEnvelope): Partial<Activity> {
 
         const message = alexaRequestBody.request;
-        const system = alexaRequestBody.context.System;
+        const system: AlexaInterfaces.system.SystemState = alexaRequestBody.context.System;
 
         // Handle events
         const activity: Partial<Activity> = {
@@ -160,11 +158,11 @@ export class AlexaAdapter extends BotAdapter {
             },
             from: {
                 id: getUserId(alexaRequestBody),
-                name: ''
+                name: 'skill'
             },
             recipient: {
                 id: system.application.applicationId,
-                name: ''
+                name: 'user'
             },
             locale: getLocale(alexaRequestBody),
             text: message.type === 'IntentRequest' ? getIntentName(alexaRequestBody) : '',
@@ -175,7 +173,7 @@ export class AlexaAdapter extends BotAdapter {
             listenFor: null,
             label: null,
             valueType: null,
-            type: message.type
+            type: getRequestType(alexaRequestBody)
         };
 
         // Set Activity Type
@@ -230,32 +228,31 @@ export class AlexaAdapter extends BotAdapter {
         }
 
         const alexaRequestBody: RequestEnvelope = await retrieveBody(req);
-        const activity = this.requestToActivity(alexaRequestBody);
 
         // Verify if request is a valid request from Alexa
         // https://developer.amazon.com/docs/custom-skills/host-a-custom-skill-as-a-web-service.html#verify-request-sent-by-alexa
         try {
-            // Check the request signature
-            await this.verifier.verify(JSON.stringify(alexaRequestBody), req.headers);
-            // Check the request timestamp
+            await new SkillRequestSignatureVerifier().verify(JSON.stringify(alexaRequestBody), req.headers);
             await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
         }
         catch (error) {
-            console.warn(`AlexaAdapter.processActivity(): ${ error.message }`);
+            console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
             res.status(400);
-            res.end();
+            res.end(createAskSdkError('AlexaAdapter', error.message));
             return;
         }
+
+        const activity = this.requestToActivity(alexaRequestBody);
 
         // Create a Conversation Reference
         const context: TurnContext = this.createContext(activity);
 
         // Handle session attributes
-        if (alexaRequestBody.session.attributes) {
-            context.turnState.set('alexaSessionAttributes', alexaRequestBody.session.attributes);
-        } else {
-            context.turnState.set('alexaSessionAttributes', {});
-        }
+        // if (alexaRequestBody.session.attributes) {
+        //     context.turnState.set('alexaSessionAttributes', alexaRequestBody.session.attributes);
+        // } else {
+        //     context.turnState.set('alexaSessionAttributes', {});
+        // }
 
         context.turnState.set('httpStatus', 200);
         await this.runMiddleware(context, logic);
@@ -275,15 +272,6 @@ export class AlexaAdapter extends BotAdapter {
      */
     protected createContext(request: Partial<Activity>): TurnContext {
         return new TurnContext(this as any, request);
-    }
-
-    /**
-     * Allows for the overriding of the Twilio object in unit tests and derived adapters.
-     * @param accountSid Twilio AccountSid
-     * @param authToken Twilio Auth Token
-     */
-    protected createAlexaClient(): any {
-        return {};
     }
 
 }
