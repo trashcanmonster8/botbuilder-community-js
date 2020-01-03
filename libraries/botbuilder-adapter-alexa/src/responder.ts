@@ -42,7 +42,7 @@ export class Responder {
                 break;
             }
             default: {
-                throw alexaAdapterError('unknown activity')
+                throw alexaAdapterError('unknown activity');
             }
         }
 
