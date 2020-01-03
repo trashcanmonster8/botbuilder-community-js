@@ -10,6 +10,10 @@ import { alexaAdapterError } from './util';
 export class Responder {
     private readonly activites: Activity[];
 
+    public static createResponse(activites: Activity[]): ResponseEnvelope {
+        return (new Responder(activites)).getResponse();
+    }
+
     public constructor(activities: Activity[]) {
         if (activities.length < 1) {
             throw alexaAdapterError('no response activites created for this request');

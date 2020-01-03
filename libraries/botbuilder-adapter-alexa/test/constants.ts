@@ -11,7 +11,7 @@ const context: Context = {
         apiEndpoint: 'alexa.amazon.com'
     }
 };
-const session: Session = {
+export const session: Session = {
     new: false,
     sessionId: 'sessionId',
     user: context.System.user,

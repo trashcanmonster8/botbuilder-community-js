@@ -1,9 +1,8 @@
 import { AdapterAlexa } from '../src';
 import { notEqual, rejects, equal, deepEqual } from 'assert';
 import { Activity, WebRequest, WebResponse } from 'botbuilder';
-import { TurnContext, ResourceResponse, ActivityTypes } from 'botbuilder-core';
-import { IntentRequest } from 'ask-sdk-model';
-import { basicIntentRequest, basicEndSession } from './constants';
+import { TurnContext, ResourceResponse } from 'botbuilder-core';
+import { basicIntentRequest, session } from './constants';
 
 describe('Tests for Alexa Adapter', (): void => {
     let alexaAdapter: AdapterAlexa;
@@ -67,6 +66,20 @@ describe('Tests for Alexa Adapter', (): void => {
             };
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             await alexaAdapter.processActivity(alexaRequest, alexaResponse, async (_context: TurnContext): Promise<void> => {});
+        });
+
+        it('should return 500 if responder fails', async (): Promise<void> => {
+            basicIntentRequest.session = session;
+            alexaRequest.body = basicIntentRequest;
+            alexaResponse.status = (status: number): void => {
+                equal(status, 500);
+            };
+
+            await alexaAdapter.processActivity(alexaRequest, alexaResponse, async (context: TurnContext): Promise<void> => {
+                await context.sendActivity({
+                    type: 'unknonw activity'
+                });
+            });
         });
     });
 });

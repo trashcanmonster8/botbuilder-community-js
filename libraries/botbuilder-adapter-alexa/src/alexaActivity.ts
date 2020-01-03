@@ -1,6 +1,7 @@
 import { RequestEnvelope } from 'ask-sdk-model';
 import { Activity, ActivityTypes } from 'botbuilder';
 import { getRequestType, getIntentName, getLocale, getUserId } from 'ask-sdk-core';
+import * as uuid from 'uuid';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -29,7 +30,7 @@ export class AlexaActivity {
         if (request.session === undefined) {
             request.session = {
                 new: true,
-                sessionId: '',
+                sessionId: uuid(),
                 user: request.context.System.user,
                 application: request.context.System.application
             };
@@ -39,6 +40,7 @@ export class AlexaActivity {
             type: AlexaChannel.invalidActivity,
             serviceUrl: request.context.System.apiEndpoint,
             channelId: AlexaChannel.channelId,
+            id: uuid(),
             from: {
                 id: getUserId(request),
                 name: AlexaChannel.userName

@@ -5,12 +5,12 @@ import {
     Activity,
     ResourceResponse,
     WebRequest,
-    WebResponse,
-    ActivityTypes
+    WebResponse
 } from 'botbuilder';
-import { RequestEnvelope } from 'ask-sdk-model';
+import { RequestEnvelope, ResponseEnvelope } from 'ask-sdk-model';
 import { retrieveBody, alexaAdapterError } from './util';
 import { AlexaActivity } from './alexaActivity';
+import { Responder } from './responder';
 
 /**
  * @module botbuildercommunity/adapter-alexa
@@ -48,34 +48,20 @@ export class AdapterAlexa extends BotAdapter {
         const alexaRequest: RequestEnvelope = await retrieveBody(req);
         const activity: Partial<Activity> = AlexaActivity.createActivity(alexaRequest);
         const context: TurnContext = this.createContext(activity);
+        const key = this.createKey(context);
+        
         await this.runMiddleware(context, logic);
 
-        const key = this.createKey(context);
         const activities: Activity[] | undefined = this.responses.get(key);
         if (activities !== undefined) {
-            const activity: Activity | undefined = activities.shift();
-            if (activity !== undefined) {
-                if (activity.type === ActivityTypes.Message) {
-                    res.status(200);
-                    res.send({
-                        version: '1.0',
-                        response: {
-                            outputSpeech: {
-                                type: 'PlainText',
-                                text: activity.text || ''
-                            }
-                        }
-                    });
-                } else if (activity.type === ActivityTypes.EndOfConversation) {
-                    res.status(200);
-                    res.send({
-                        version: '1.0',
-                        response: {
-                            shouldEndSession: true
-                        }
-                    });
-                }
+            try {
+                const response: ResponseEnvelope = Responder.createResponse(activities);
+                res.status(200);
+                res.send(response);
                 this.responses.delete(key);
+            } catch(error) {
+                res.status(500);
+                res.send(alexaAdapterError('unable to create response from activities'));
             }
         } else {
             res.status(404);
