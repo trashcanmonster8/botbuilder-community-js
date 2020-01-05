@@ -42,6 +42,9 @@ export enum AlexaMultipleOutgoingActivitiesPolicies {
 }
 
 export enum AlexaActivityTypes {
+    LaunchRequest = 'LaunchRequest',
+    SessionEndedRequest = 'SessionEndedRequest',
+    IntentRequest = 'IntentRequest'
 }
 
 /**
@@ -104,7 +107,7 @@ export class AlexaAdapter extends BotAdapter {
                     break;
                 default:
                     responses.push({} as ResourceResponse);
-                    console.warn(`AlexaAdapter.sendActivities(): Activities of type '${activity.type}' aren't supported.`);
+                    console.warn(`AlexaAdapter.sendActivities(): Activities of type '${ activity.type }' aren't supported.`);
             }
         }
 
@@ -124,7 +127,7 @@ export class AlexaAdapter extends BotAdapter {
         // Add SSML or text response
         if (activity.speak) {
             if (!activity.speak.startsWith('<speak>') && !activity.speak.endsWith('</speak>')) {
-                activity.speak = `<speak>${activity.speak}</speak>`;
+                activity.speak = `<speak>${ activity.speak }</speak>`;
             }
 
             response.outputSpeech = {
@@ -196,11 +199,11 @@ export class AlexaAdapter extends BotAdapter {
                 name: 'user'
             },
             locale: getLocale(alexaRequestBody),
-            text: message.type === 'IntentRequest' ? getIntentName(alexaRequestBody) : '',
+            text: message.type === AlexaActivityTypes.IntentRequest ? getIntentName(alexaRequestBody) : '',
             channelData: alexaRequestBody,
             localTimezone: null,
             callerId: null,
-            serviceUrl: `${system.apiEndpoint}?token=${system.apiAccessToken}`,
+            serviceUrl: `${ system.apiEndpoint }?token=${ system.apiAccessToken }`,
             listenFor: null,
             label: null,
             valueType: null,
@@ -210,15 +213,15 @@ export class AlexaAdapter extends BotAdapter {
         // Set Activity Type
         switch (message.type) {
 
-            case 'LaunchRequest':
+            case AlexaActivityTypes.LaunchRequest:
                 activity.type = ActivityTypes.ConversationUpdate;
                 break;
 
-            case 'SessionEndedRequest':
+            case AlexaActivityTypes.SessionEndedRequest:
                 activity.type = ActivityTypes.EndOfConversation;
                 break;
 
-            case 'IntentRequest':
+            case AlexaActivityTypes.IntentRequest:
                 activity.type = ActivityTypes.Message;
                 break;
 
@@ -270,7 +273,7 @@ export class AlexaAdapter extends BotAdapter {
                 await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
             }
             catch (error) {
-                console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
+                console.warn(`AlexaAdapter.processActivity(): ${ error.message }`);
                 res.status(400);
                 res.end(createAskSdkError('AlexaAdapter', error.message));
                 return;
@@ -281,13 +284,6 @@ export class AlexaAdapter extends BotAdapter {
 
         // Create a Conversation Reference
         const context: TurnContext = this.createContext(activity);
-
-        // Handle session attributes
-        // if (alexaRequestBody.session.attributes) {
-        //     context.turnState.set('alexaSessionAttributes', alexaRequestBody.session.attributes);
-        // } else {
-        //     context.turnState.set('alexaSessionAttributes', {});
-        // }
 
         context.turnState.set('httpStatus', 200);
         await this.runMiddleware(context, logic);
