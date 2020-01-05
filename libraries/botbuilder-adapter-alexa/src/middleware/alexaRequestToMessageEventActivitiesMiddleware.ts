@@ -1,3 +1,4 @@
+import { AlexaActivityTypes } from './../alexaAdapter';
 import { Middleware, TurnContext } from 'botbuilder';
 import { RequestEnvelope } from 'ask-sdk-model';
 import { getSlotValue } from 'ask-sdk-core';
@@ -30,7 +31,7 @@ export class AlexaRequestToMessageEventActivitiesMiddleware implements Middlewar
 
         const alexaRequest: RequestEnvelope = context.activity.channelData;
 
-        if (alexaRequest.request.type !== 'IntentRequest') {
+        if (alexaRequest.request.type !== AlexaActivityTypes.IntentRequest) {
             return await next();
         }
 
