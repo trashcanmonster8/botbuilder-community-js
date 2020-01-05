@@ -12,13 +12,33 @@ import { SkillRequestSignatureVerifier, TimestampVerifier } from 'ask-sdk-expres
  */
 export interface AlexaAdapterSettings {
     /**
+     * 
+     * https://developer.amazon.com/en-US/docs/alexa/echo-button-skills/keep-session-open.html
      * Defaults to true
      */
     shouldEndSessionByDefault?: boolean;
     /**
+     * 
      * Defaults to false
      */
-    tryConvertFirstActivityAttachmentToAlexaCard?: boolean; 
+    tryConvertFirstActivityAttachmentToAlexaCard?: boolean;
+    /**
+     * This prevents a malicious developer from configuring a skill with your endpoint and then using that skill to send requests to your service.
+     * https://developer.amazon.com/en-US/docs/alexa/custom-skills/handle-requests-sent-by-alexa.html
+     * Defaults to true
+     */
+    validateIncomingAlexaRequests?: boolean;
+    /**
+     * 
+     * Defaults to TakeLastActivity
+     */
+    multipleOutgoingActivitiesPolicy?: AlexaMultipleOutgoingActivitiesPolicies;
+}
+
+export enum AlexaMultipleOutgoingActivitiesPolicies {
+    TakeFirstActivity,
+    TakeLastActivity,
+    ConcatenateTextSpeakPropertiesFromAllActivities
 }
 
 export enum AlexaActivityTypes {
@@ -47,6 +67,8 @@ export class AlexaAdapter extends BotAdapter {
         const defaultSettings: AlexaAdapterSettings = {
             shouldEndSessionByDefault: true,
             tryConvertFirstActivityAttachmentToAlexaCard: false,
+            validateIncomingAlexaRequests: true,
+            multipleOutgoingActivitiesPolicy: AlexaMultipleOutgoingActivitiesPolicies.TakeLastActivity
         };
 
         this.settings = { ...defaultSettings, ...settings };
@@ -82,7 +104,7 @@ export class AlexaAdapter extends BotAdapter {
                     break;
                 default:
                     responses.push({} as ResourceResponse);
-                    console.warn(`AlexaAdapter.sendActivities(): Activities of type '${ activity.type }' aren't supported.`);
+                    console.warn(`AlexaAdapter.sendActivities(): Activities of type '${activity.type}' aren't supported.`);
             }
         }
 
@@ -102,7 +124,7 @@ export class AlexaAdapter extends BotAdapter {
         // Add SSML or text response
         if (activity.speak) {
             if (!activity.speak.startsWith('<speak>') && !activity.speak.endsWith('</speak>')) {
-                activity.speak = `<speak>${ activity.speak }</speak>`;
+                activity.speak = `<speak>${activity.speak}</speak>`;
             }
 
             response.outputSpeech = {
@@ -178,7 +200,7 @@ export class AlexaAdapter extends BotAdapter {
             channelData: alexaRequestBody,
             localTimezone: null,
             callerId: null,
-            serviceUrl: `${ system.apiEndpoint }?token=${ system.apiAccessToken }`,
+            serviceUrl: `${system.apiEndpoint}?token=${system.apiAccessToken}`,
             listenFor: null,
             label: null,
             valueType: null,
@@ -230,25 +252,29 @@ export class AlexaAdapter extends BotAdapter {
     public async processActivity(req: WebRequest, res: WebResponse, logic: (context: TurnContext) => Promise<any>): Promise<void> {
 
         // Validate if request is coming from Alexa
-        if (!req.headers && (!req.headers['signature'] || !req.headers['Signature'])) {
-            console.warn(`AlexaAdapter.processActivity(): request doesn't contain an Alexa Signature.`);
-            res.status(401);
-            res.end();
+        if (this.settings.validateIncomingAlexaRequests) {
+            if (!req.headers && (!req.headers['signature'] || !req.headers['Signature'])) {
+                console.warn(`AlexaAdapter.processActivity(): request doesn't contain an Alexa Signature.`);
+                res.status(401);
+                res.end();
+            }
         }
 
         const alexaRequestBody: RequestEnvelope = await retrieveBody(req);
 
-        // Verify if request is a valid request from Alexa
-        // https://developer.amazon.com/docs/custom-skills/host-a-custom-skill-as-a-web-service.html#verify-request-sent-by-alexa
-        try {
-            await new SkillRequestSignatureVerifier().verify(JSON.stringify(alexaRequestBody), req.headers);
-            await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
-        }
-        catch (error) {
-            console.warn(`AlexaAdapter.processActivity(): ${ error.message }`);
-            res.status(400);
-            res.end(createAskSdkError('AlexaAdapter', error.message));
-            return;
+        if (this.settings.validateIncomingAlexaRequests) {
+            // Verify if request is a valid request from Alexa
+            // https://developer.amazon.com/docs/custom-skills/host-a-custom-skill-as-a-web-service.html#verify-request-sent-by-alexa
+            try {
+                await new SkillRequestSignatureVerifier().verify(JSON.stringify(alexaRequestBody), req.headers);
+                await new TimestampVerifier().verify(JSON.stringify(alexaRequestBody));
+            }
+            catch (error) {
+                console.warn(`AlexaAdapter.processActivity(): ${error.message}`);
+                res.status(400);
+                res.end(createAskSdkError('AlexaAdapter', error.message));
+                return;
+            }
         }
 
         const activity = this.requestToActivity(alexaRequestBody);

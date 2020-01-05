@@ -2,16 +2,20 @@ import { Middleware, TurnContext } from 'botbuilder';
 import { RequestEnvelope } from 'ask-sdk-model';
 import { getSlotValue } from 'ask-sdk-core';
 
-export interface AlexaIntentRequestToMessageActivityMiddlewareSettings {
+/**
+ * Intent Slot Name
+ * Defaults to 'phrase'
+ */
+export interface AlexaRequestToMessageEventActivitiesMiddlewareSettings {
     intentSlotName: string;
 }
 
-export class AlexaIntentRequestToMessageActivityMiddleware implements Middleware {
+export class AlexaRequestToMessageEventActivitiesMiddleware implements Middleware {
 
-    protected readonly settings: AlexaIntentRequestToMessageActivityMiddlewareSettings;
+    protected readonly settings: AlexaRequestToMessageEventActivitiesMiddlewareSettings;
 
-    public constructor(settings: AlexaIntentRequestToMessageActivityMiddlewareSettings) {
-        const defaultSettings: AlexaIntentRequestToMessageActivityMiddlewareSettings = {
+    public constructor(settings: AlexaRequestToMessageEventActivitiesMiddlewareSettings) {
+        const defaultSettings: AlexaRequestToMessageEventActivitiesMiddlewareSettings = {
             intentSlotName: 'phrase'
         };
 
